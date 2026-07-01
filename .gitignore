@@ -1,0 +1,20 @@
+# Forge / Gradle
+.gradle/
+build/
+run/
+out/
+bin/
+
+# IDE
+.idea/
+*.iml
+*.ipr
+*.iws
+.eclipse/
+.settings/
+.classpath
+.project
+.vscode/
+
+# Forge generated
+*.launch
