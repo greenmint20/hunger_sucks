@@ -2,6 +2,7 @@
   "required": true,
   "package": "com.greenmint20.hungersucks.mixin",
   "compatibilityLevel": "JAVA_17",
+  "minVersion": "0.8",
   "refmap": "hungersucks.refmap.json",
   "mixins": [
     "FoodDataMixin",

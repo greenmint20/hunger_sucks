@@ -91,7 +91,13 @@ public final class CommonEvents {
     private static void syncAll(ServerPlayer sp) {
         boolean naturalRegen = sp.level().getGameRules().getBoolean(GameRules.RULE_NATURAL_REGENERATION);
         HSNetwork.toPlayer(sp, new SyncNaturalRegenPacket(naturalRegen));
-        FoodHealingCapability.get(sp).ifPresent(fh ->
-                HSNetwork.toPlayer(sp, new SyncFoodHealingPacket(fh.getHealAmount(), fh.getAmountHealed())));
+        FoodHealingCapability.get(sp).ifPresent(fh -> {
+            HSNetwork.toPlayer(sp, new SyncFoodHealingPacket(fh.getHealAmount(), fh.getAmountHealed()));
+            // Cooldowns are runtime-only state while the heal itself is persisted,
+            // so a player who left mid-heal comes back able to click food that the
+            // server will then refuse. Re-arm the remainder — see
+            // FoodHealing#restoreCooldown.
+            fh.restoreCooldown(sp);
+        });
     }
 }

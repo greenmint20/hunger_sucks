@@ -17,8 +17,13 @@ import net.minecraftforge.event.entity.player.PlayerEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
+import com.mojang.logging.LogUtils;
+import org.slf4j.Logger;
 
+import java.util.Collections;
 import java.util.Optional;
+import java.util.Set;
+import java.util.WeakHashMap;
 
 /**
  * Capability glue for {@link FoodHealing}. Mirrors the working pattern used by
@@ -69,10 +74,52 @@ public final class FoodHealingCapability {
         oldP.invalidateCaps();
     }
 
+    private static final Logger LOGGER = LogUtils.getLogger();
+    /** One warning per player object — see {@link #get}. */
+    private static final Set<Player> WARNED = Collections.newSetFromMap(new WeakHashMap<>());
+
+    /**
+     * The player's heal state, with a revive-and-retry for the failure mode that
+     * makes food silently stop healing.
+     *
+     * <p>Forge's {@code CapabilityProvider#getCapability} compiles to
+     * {@code !valid || disp == null ? LazyOptional.empty() : disp.getCapability(...)}
+     * (javap-verified against forge-1.20.1-47.4.10). That {@code valid} flag is
+     * the whole problem: once {@code invalidateCaps()} has run on a player and
+     * nothing has called {@code reviveCaps()}, this returns empty <em>without
+     * ever reaching our provider</em> — so the recreate-on-access workaround
+     * inside {@link FoodHealingProvider#getCapability} can never fire for it,
+     * because that code is downstream of the flag.
+     *
+     * <p>From then on every hook in the mod no-ops in exactly the way that hides
+     * the fault: {@code startHealing} is skipped while {@code FoodDataMixin}
+     * cancels vanilla eating anyway (food consumed, nothing healed), the server
+     * tick is skipped, and {@code canEat} falls back to {@code orElse(true)} so
+     * you can keep eating into the void. That is the reported "sometimes food
+     * stops healing", and it lasts until the player reconnects because nothing
+     * ever puts {@code valid} back.
+     *
+     * <p>So: if a live (not-removed) player resolves empty, revive and retry
+     * once. The {@link FoodHealing} data lives on the provider and is not
+     * destroyed by an invalidation, so the retry returns the real state rather
+     * than a blank one. The warning is logged once per player object, so the
+     * next report arrives with proof in the log instead of a hypothesis.
+     */
     public static Optional<FoodHealing> get(Player player) {
         if (player == null) {
             return Optional.empty();
         }
-        return player.getCapability(FOOD_HEALING).resolve();
+        Optional<FoodHealing> resolved = player.getCapability(FOOD_HEALING).resolve();
+        if (resolved.isPresent() || player.isRemoved()) {
+            return resolved;
+        }
+        player.reviveCaps();
+        resolved = player.getCapability(FOOD_HEALING).resolve();
+        if (resolved.isPresent() && WARNED.add(player)) {
+            LOGGER.warn("[hungersucks] the food-healing capability was invalidated on live player {}"
+                    + " — food would have stopped healing for them; revived it.",
+                    player.getGameProfile().getName());
+        }
+        return resolved;
     }
 }

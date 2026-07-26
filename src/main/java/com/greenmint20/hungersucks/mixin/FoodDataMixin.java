@@ -66,9 +66,29 @@ public abstract class FoodDataMixin {
             remap = false)
     private void hungersucks$startHealing(Item item, ItemStack stack, LivingEntity entity, CallbackInfo ci) {
         if (entity instanceof Player player && !player.level().isClientSide && item.isEdible()) {
-            FoodHealingCapability.get(player).ifPresent(fh -> fh.startHealing(player, stack));
+            // The fallback matters: this injector cancels vanilla eating
+            // UNCONDITIONALLY, so whenever the heal cannot be started the food is
+            // consumed for nothing and the player just sees "food stopped
+            // healing" with no error anywhere — that silence is what made the
+            // capability bug so hard to pin down. FoodHealingCapability#get now
+            // revives an invalidated capability, so an empty Optional should be
+            // impossible; if it ever happens again, heal outright rather than
+            // swallow the item. An instant heal feels wrong, and that is the
+            // point — it is visible.
+            FoodHealingCapability.get(player).ifPresentOrElse(
+                    fh -> fh.startHealing(player, stack),
+                    () -> hungersucks$emergencyHeal(player, stack));
         }
         ci.cancel();
+    }
+
+    /** @see #hungersucks$startHealing — last-resort heal so food is never a silent no-op. */
+    @Unique
+    private static void hungersucks$emergencyHeal(Player player, ItemStack stack) {
+        net.minecraft.world.food.FoodProperties food = stack.getItem().getFoodProperties(stack, player);
+        if (food != null && food.getNutrition() > 0) {
+            player.heal(food.getNutrition());
+        }
     }
 
     @Inject(method = "eat(IF)V", at = @At("HEAD"), cancellable = true)

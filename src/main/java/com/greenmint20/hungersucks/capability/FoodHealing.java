@@ -96,14 +96,41 @@ public class FoodHealing implements INBTSerializable<CompoundTag> {
             // grey overlay is then scoped to the inventory/hotbar client-side
             // (see ItemCooldownsMixin). The one-food-at-a-time rule itself is
             // also enforced by PlayerMixin#canEat, so this is opt-out via config.
-            if (ModConfig.foodCooldown.get()) {
-                int max = getMaximumHealTicks();
-                for (Item item : ForgeRegistries.ITEMS.getValues()) {
-                    if (item.isEdible()) {
-                        player.getCooldowns().addCooldown(item, max);
-                    }
-                }
+            applyFoodCooldown(player, getMaximumHealTicks());
+        }
+    }
+
+    /**
+     * Puts every food item on cooldown for {@code ticks}. Split out of
+     * {@link #startHealing} so a relog can restore it — see
+     * {@link #restoreCooldown}.
+     */
+    private static void applyFoodCooldown(Player player, int ticks) {
+        if (ticks <= 0 || !ModConfig.foodCooldown.get()) {
+            return;
+        }
+        for (Item item : ForgeRegistries.ITEMS.getValues()) {
+            if (item.isEdible()) {
+                player.getCooldowns().addCooldown(item, ticks);
             }
+        }
+    }
+
+    /**
+     * Re-arms the food cooldown for whatever is left of an in-progress heal.
+     * Called on login/respawn/dimension change.
+     *
+     * <p>{@code ItemCooldowns} is pure runtime state — it is never written to
+     * player NBT — while the heal itself IS persisted. So a player who logs out
+     * mid-heal comes back with the heal still running on the server but no
+     * cooldown on their food, which is its own flavour of "food does nothing":
+     * nothing greys out, the client happily starts the eat animation, and the
+     * server refuses it because {@code canEat} is false for the rest of the
+     * heal. Restoring the remainder keeps the two sides telling the same story.
+     */
+    public void restoreCooldown(Player player) {
+        if (healAmount > 0) {
+            applyFoodCooldown(player, Math.max(0, getMaximumHealTicks() - healTicks));
         }
     }
 
