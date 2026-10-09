@@ -1,7 +1,5 @@
 # Hunger Sucks — gameplay and configuration
 
-[Русское описание](FEATURES.md)
-
 Hunger Sucks replaces hunger with gradual healing from food. This document
 describes release **0.1.5** for **Forge 1.20.1** on the `main` branch.
 The NeoForge 1.21.1 port lives on `neoforge-1.21.1`.
