@@ -305,7 +305,7 @@ public final class ClientEvents {
         MutableComponent text = Component.literal(fmt.format(hearts) + " ")
                 .withStyle(ChatFormatting.GRAY);
         text.append(Component.literal("❤ ").withStyle(ChatFormatting.DARK_RED));
-        text.append(Component.literal("/ " + fmt.format(seconds) + "s").withStyle(ChatFormatting.GRAY));
+        text.append(Component.translatable("hungersucks.tooltip.healing_time", fmt.format(seconds)).withStyle(ChatFormatting.GRAY));
         // Index 1 = right under the item name.
         if (event.getToolTip().size() > 1) {
             event.getToolTip().add(1, text);

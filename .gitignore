@@ -18,3 +18,11 @@ bin/
 
 # Forge generated
 *.launch
+
+# Temporary files and local logs
+*.log
+*.tmp
+*.bak
+*.class
+.DS_Store
+Thumbs.db

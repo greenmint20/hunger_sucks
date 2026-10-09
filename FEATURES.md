@@ -1,80 +1,83 @@
-# Hunger Sucks — что умеет мод (для игрока)
+# Hunger Sucks — gameplay and configuration
 
-**Hunger Sucks** убирает привычную систему голода: вместо того чтобы есть «чтобы
-не умереть с голоду», еда теперь **лечит вас напрямую и постепенно**. Это
-Forge-1.20.1-порт мода *Hearty Meals* и первый кирпичик более крупного реворка
-еды.
+[Русское описание](FEATURES.md)
 
----
+Hunger Sucks replaces hunger with gradual healing from food. This document
+describes release **0.1.5** for **Forge 1.20.1** on the `main` branch.
+The NeoForge 1.21.1 port lives on `neoforge-1.21.1`.
 
-## Основные механики
+## Food heals you
 
-### 🍗 Еда лечит, а не кормит
-- Полоска голода **убрана полностью**. Голод больше не убывает и не мешает бегать.
-- Когда вы едите, еда **постепенно восстанавливает здоровье**:
-  - **сколько** вылечит — зависит от прежней «сытности» еды (nutrition);
-  - **как быстро** — зависит от прежнего модификатора насыщения (saturation).
-- Пока идёт лечение, **есть снова нельзя** — вся еда уходит в кулдаун (серая) до
-  конца восстановления.
+- The hunger bar is hidden. Hunger does not drain, cause starvation, or prevent sprinting.
+- Vanilla hunger-based regeneration is replaced by food healing over time.
+- A food's nutrition determines how many health points it restores; two health points equal one heart.
+- Its saturation determines how quickly it heals.
+- Ordinary food can be eaten when you are missing health and no food healing is running.
+- By default, all edible items receive a cooldown for the duration of healing.
+  The grey cooldown sweep appears in your inventory and hotbar, rather than in
+  the creative inventory or other mods' item lists such as JEI.
+- Disabling `foodCooldown` removes the item cooldown. Ordinary food is still
+  blocked during healing; always-edible food, such as golden apples, follows
+  Minecraft's exception and can be eaten without missing health.
+- Healing progress is saved when you leave the world. Its remaining cooldown
+  is restored on login, respawn, or dimension changes when applicable.
 
-### ❤ Подсказки по лечению
-- На любой еде в тултипе показано, **сколько ❤** и **за сколько секунд** она
-  вылечит — например, `2 ❤ / 4s`: первая цифра — сколько здоровья прибавит,
-  вторая — за какое время.
-- Когда вы держите еду в руке (или уже лечитесь), на полоске здоровья
-  **пульсирующим контуром** подсвечивается, сколько здоровья прибавится. Контур
-  **повторяет цвет сердец**: под Ядом — зелёный, под Иссушением — чёрный, при
-  заморозке — голубой, и **дрожит вместе с сердцами** на низком здоровье. (В
-  креативе, режиме наблюдателя, а также под эффектом Голода превью не
-  показывается.)
-- Пока идёт лечение, вся еда уходит в перезарядку (серый «циферблат»). Этот
-  индикатор показывается только **в вашем инвентаре и хотбаре** — не в креатив-меню
-  и не в списках других модов (JEI), где он смотрелся бы абсурдно. Само правило
-  «нельзя есть во время лечения» при этом действует всегда, откуда бы вы ни взяли
-  еду.
+## Healing tooltips and previews
 
-### 🛡 Броня переехала
-- Полоска брони перемещена **вправо вниз** — туда, где раньше была полоска голода.
-  (Отключается в конфиге, `moveArmorBar`.)
-- Пузырьки воздуха при этом не накладываются на броню: без брони они остаются
-  внизу, а когда броня надета — поднимаются на строку выше неё.
+- Food tooltips show the healing amount in hearts and the total duration.
+  For example, `2 ❤ / 4s` means two hearts over four seconds.
+- Holding food or healing from it displays a pulsing outline of the expected
+  health gain on the health bar.
+- The outline matches the heart color during Poison, Wither, and freezing,
+  and follows the hearts' low-health shaking.
+- The preview is hidden in Creative and Spectator modes, while Hunger is
+  active, or when `naturalRegeneration` is disabled.
+- `displayHealthGained` controls both the tooltip and the health-bar preview.
+- English and Russian translations are available for the tooltip's time unit.
 
-### 🥤 Напитки пьются быстрее
-- **Мёд, супы, молоко и зелья** употребляются **вдвое быстрее**.
-- У **мёда** заметно увеличен модификатор насыщения (лечит быстрее).
+## Armor and air bars
 
-### ✨ Взаимодействие с эффектами
-- **Saturation (Насыщение)** — теперь **мгновенно лечит** в зависимости от уровня
-  эффекта.
-- **Hunger (Голод)** — теперь это дебафф «**еда не лечит**». Под голодом на любой
-  сложности можно есть **в любой момент** (даже на полном здоровье), чтобы
-  получить эффекты еды — например, съесть подозрительную похлёбку ради её эффекта,
-  — но **здоровье от еды не восстановится**, и превью лечения на сердцах не
-  показывается. Урона голод больше не наносит (например, рыба фугу не опасна сама
-  по себе).
+- The armor bar moves to the bottom right, where the hunger bar used to be.
+  Disable `moveArmorBar` to keep its original position.
+- With the relocated armor bar, air bubbles stay on the lower row without
+  armor and move up one row when armor is equipped.
 
----
+## Faster drinks and saturation bonuses
 
-## Настройки (конфиг)
+- Honey bottles, stews, milk, and potions are consumed twice as fast when
+  `fasterFluidConsumption` is enabled.
+- `increaseHoneySaturation` raises honey's saturation modifier to `0.8`,
+  making its food healing faster.
+- Items in the `hungersucks:increased_saturation` tag receive a `2.6` multiplier
+  to their effective saturation. The tag currently contains pumpkin pie.
+  Data packs can extend it to other foods.
 
-Файлы конфигов Forge: `config/hungersucks-common.toml` и
-`config/hungersucks-client.toml`.
+## Status effects and game rules
 
-| Опция | По умолчанию | Что делает | Сторона |
-|---|---|---|---|
-| `foodCooldown` | вкл | Во время лечения вся еда уходит в перезарядку (нельзя есть до конца лечения) | сервер |
-| `disableSprinting` | выкл | Полностью запрещает спринт | сервер |
-| `fasterFluidConsumption` | вкл | Мёд/супы/молоко/зелья пьются вдвое быстрее | сервер |
-| `increaseHoneySaturation` | вкл | У мёда больше насыщения (лечит быстрее) | сервер |
-| `displayHealthGained` | вкл | Превью лечения на сердцах + тултип на еде | клиент |
-| `moveArmorBar` | вкл | Перенос брони туда, где была полоска голода | клиент |
+- **Saturation** restores health instantly instead of filling hunger.
+  The amount depends on the effect's level.
+- **Hunger** prevents food healing. You can still eat at full health to gain
+  other food effects, such as those from suspicious stew, subject to an existing
+  item cooldown. The healing preview is hidden while Hunger is active.
+- Starvation damage is removed. Other harmful food effects, such as Poison,
+  still apply.
+- Setting `naturalRegeneration` to `false` stops food from restoring health
+  and hides healing tooltips and previews. Changes take effect without rejoining.
+  This rule does not disable the separate instant healing from Saturation.
+- If Hunger or disabled natural regeneration interrupts a running food heal,
+  its timer continues; the missed health is not restored afterward.
 
-> Если на сервере выключен геймрул `naturalRegeneration`, еда **не лечит**, а
-> превью лечения на сердцах гаснет. Изменение геймрула применяется **сразу**, без
-> перезахода в мир.
+## Configuration
 
----
+Forge creates `config/hungersucks-common.toml` for gameplay settings and
+`config/hungersucks-client.toml` for visual settings. Keep common settings
+consistent between the client and server.
 
-## Чего пока нет (см. `TODO.md`)
-- Расширение состава тега `increased_saturation` (совместимость с пирогами из
-  других модов).
+| Setting | Default | Effect | Scope |
+| --- | --- | --- | --- |
+| `foodCooldown` | `true` | Applies a cooldown to all edible items during food healing | Common |
+| `disableSprinting` | `false` | Disables sprinting | Common |
+| `fasterFluidConsumption` | `true` | Halves the consumption time of honey, stews, milk, and potions | Common |
+| `increaseHoneySaturation` | `true` | Increases honey's saturation for faster healing | Common |
+| `displayHealthGained` | `true` | Shows food healing tooltips and the health-bar preview | Client |
+| `moveArmorBar` | `true` | Moves the armor bar into the former hunger-bar position | Client |
